@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nano Energy Lab — Paper Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+--bg:#ffffff;--bg2:#f8f9fc;--bg3:#f1f3f8;
+--border:#dde1ec;--border2:#c5cad8;
+--text:#1a1e2e;--text2:#5a6380;--text3:#9099b0;
+--accent:#2563eb;--accent2:#1d4ed8;
+--green:#0d7a45;--amber:#b45309;--red:#b91c1c;--purple:#6d28d9;
+--radius:8px;--radius2:12px;
+font-family:'IBM Plex Sans KR',sans-serif;
+}
+body{background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.6}
+.header{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 2rem;display:flex;align-items:center;gap:1rem;height:56px}
+.logo{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--accent);letter-spacing:2px;font-weight:500}
+.header-sub{font-size:12px;color:var(--text3);border-left:1px solid var(--border);padding-left:1rem;margin-left:0.5rem}
+.api-status{margin-left:auto;font-size:11px;display:flex;align-items:center;gap:6px}
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--border2)}
+.status-dot.ok{background:var(--green)}
+.status-dot.err{background:var(--red)}
+.tabs{display:flex;border-bottom:1px solid var(--border);background:var(--bg2);padding:0 2rem}
+.tab{padding:14px 20px;font-size:13px;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-num{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;background:var(--bg3);border-radius:50%;font-size:10px;margin-right:6px;font-family:'IBM Plex Mono',monospace}
+.tab.active .tab-num{background:var(--accent);color:#fff}
+.page{display:none;padding:2rem;max-width:900px;margin:0 auto}
+.page.active{display:block}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius2);padding:1.5rem;margin-bottom:1rem}
+.card-title{font-size:15px;font-weight:500;line-height:1.4}
+.card-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500;white-space:nowrap}
+.badge-blue{background:#e8f0fd;color:#2563eb}
+.badge-green{background:#e6f7ef;color:#0d7a45}
+.badge-amber{background:#fef3e2;color:#b45309}
+.badge-purple{background:#f0ebff;color:#6d28d9}
+.badge-red{background:#fee2e2;color:#b91c1c}
+.week-badge{background:var(--accent);color:#fff;font-family:'IBM Plex Mono',monospace;font-size:11px;padding:4px 12px;border-radius:4px;font-weight:500}
+label{display:block;font-size:12px;color:var(--text2);margin-bottom:6px;letter-spacing:0.3px}
+input[type=text],input[type=number],input[type=date],select,textarea{
+width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);
+padding:10px 12px;color:var(--text);font-size:13px;font-family:inherit;outline:none;transition:border .2s}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+textarea{resize:vertical;min-height:100px;line-height:1.6}
+select option{background:var(--bg3)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.form-group{margin-bottom:1rem}
+.form-group.full{grid-column:1/-1}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:var(--radius);font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .2s;font-family:inherit}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--accent2)}
+.btn-primary:disabled{background:var(--border2);cursor:not-allowed}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border)}
+.btn-ghost:hover{border-color:var(--border2);color:var(--text)}
+.btn-sm{padding:5px 10px;font-size:11px}
+.btn-row{display:flex;gap:8px;margin-top:1.5rem}
+.upload-zone{border:1px dashed var(--border2);border-radius:var(--radius2);padding:2rem;text-align:center;cursor:pointer;transition:all .2s;background:var(--bg3)}
+.upload-zone:hover{border-color:var(--accent);background:#eef3fd}
+.upload-zone.has-file{border-color:var(--green);background:#e6f7ef}
+.upload-icon{font-size:28px;margin-bottom:8px;opacity:0.5}
+.upload-text{font-size:13px;color:var(--text2)}
+.upload-hint{font-size:11px;color:var(--text3);margin-top:4px}
+input[type=file]{display:none}
+.paper-item{display:flex;align-items:flex-start;gap:12px;padding:1rem;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px}
+.paper-item:hover{border-color:var(--border2)}
+.paper-idx{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text3);min-width:24px;margin-top:2px}
+.paper-info{flex:1}
+.paper-info .title{font-size:13px;font-weight:500;margin-bottom:3px;line-height:1.4}
+.paper-info .meta{font-size:11px;color:var(--text2)}
+.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.dot-done{background:var(--green)}
+.dot-pending{background:var(--amber)}
+.section-title{font-size:11px;letter-spacing:1.5px;color:var(--text3);text-transform:uppercase;font-weight:500;margin-bottom:1rem;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:1.5rem}
+.stat{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:1rem}
+.stat-val{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:500;line-height:1}
+.stat-lbl{font-size:11px;color:var(--text3);margin-top:4px}
+.divider{border:none;border-top:1px solid var(--border);margin:1.5rem 0}
+.rating{display:flex;gap:3px;margin-top:4px}
+.star{font-size:14px;cursor:pointer;color:var(--border2);transition:color .15s}
+.star.on{color:var(--amber)}
+.notif{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--bg2);border:1px solid var(--green);color:var(--green);padding:12px 18px;border-radius:var(--radius);font-size:13px;display:none;z-index:999;box-shadow:0 4px 12px rgba(0,0,0,0.1)}
+.loading{text-align:center;padding:2rem;color:var(--text3);font-size:13px}
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin-right:8px;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+.api-config{background:#fff8e1;border:1px solid #f5a623;border-radius:var(--radius);padding:1rem;margin-bottom:1.5rem;font-size:13px}
+.api-config code{background:#f1f3f8;padding:2px 6px;border-radius:4px;font-family:'IBM Plex Mono',monospace;font-size:12px}
+@media(max-width:640px){.form-grid{grid-template-columns:1fr}.stat-row{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">NANO·ENERGY</div>
+  <div class="header-sub">Nano Energy Lab 논문 관리 시스템</div>
+  <div class="api-status">
+    <div class="status-dot" id="status-dot"></div>
+    <span id="status-text" style="color:var(--text3)">연결 확인 중...</span>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab(0)"><span class="tab-num">1</span>주간 숙제 논문</div>
+  <div class="tab" onclick="switchTab(1)"><span class="tab-num">2</span>랩미팅 논문</div>
+  <div class="tab" onclick="switchTab(2)"><span class="tab-num">3</span>추가 논문 업로드</div>
+</div>
+
+<!-- TAB 1: 주간 숙제 -->
+<div class="page active" id="page-0">
+
+  <div id="api-warning" class="api-config" style="display:none">
+    ⚠️ API 주소가 설정되지 않았습니다. 파일 상단의 <code>API_URL</code>에 Apps Script 배포 URL을 입력해주세요.
+  </div>
+
+  <div class="stat-row">
+    <div class="stat">
+      <div class="stat-val" id="stat-week">-</div>
+      <div class="stat-lbl">현재 주차</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val" id="stat-done" style="color:var(--green)">-</div>
+      <div class="stat-lbl">이번 주 제출</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val" id="stat-total" style="color:var(--accent)">-</div>
+      <div class="stat-lbl">전체 제출</div>
+    </div>
+  </div>
+
+  <div class="section-title">이번 주 추천 논문</div>
+  <div class="card">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+      <span class="week-badge" id="hw-week-badge">W-</span>
+      <span class="badge badge-blue">01_Sandwich_Mechanism</span>
+    </div>
+    <div class="card-title">Facet-selective growth of halide perovskite/2D semiconductor van der Waals heterostructures for improved optical gain and lasing</div>
+    <div class="card-meta">
+      <span class="badge badge-purple">Nature Commun. 2024</span>
+      <span class="badge badge-green">IF 16.6</span>
+      <span class="badge badge-amber">인용 47회</span>
+    </div>
+    <div style="font-size:12px;color:var(--text2);margin-top:10px;padding:10px;background:var(--bg3);border-radius:var(--radius)">
+      DOI: 10.1038/s41467-024-49364-0 &nbsp;·&nbsp; Zhang et al. &nbsp;·&nbsp; 마감: 매주 수요일
+    </div>
+  </div>
+
+  <div class="section-title" style="margin-top:1.5rem">과제 제출</div>
+  <div class="card">
+    <div class="form-group">
+      <label>학생 이름 *</label>
+      <input type="text" id="hw-name" placeholder="이름 입력">
+    </div>
+    <div class="form-group">
+      <label>Key Findings — 논문의 핵심 발견 3가지 이상</label>
+      <textarea id="hw-findings" placeholder="1. &#10;2. &#10;3. " style="min-height:120px"></textarea>
+    </div>
+    <div class="form-group">
+      <label>Experimental Conditions — 합성 실험조건 정리</label>
+      <textarea id="hw-exp" placeholder="· 전구체: &#10;· 온도: &#10;· 용매: &#10;· 분위기: &#10;· 특이사항: " style="min-height:120px"></textarea>
+    </div>
+    <div class="form-group">
+      <label>우리 연구와의 연관성</label>
+      <textarea id="hw-relevance" placeholder="WMoSe₂/CsPbBr₃ 샌드위치 구조 연구와 어떻게 연결되는지..." style="min-height:80px"></textarea>
+    </div>
+    <div class="form-group">
+      <label>논문 난이도</label>
+      <div class="rating" id="rating">
+        <span class="star" onclick="setRating(1)">★</span>
+        <span class="star" onclick="setRating(2)">★</span>
+        <span class="star" onclick="setRating(3)">★</span>
+        <span class="star" onclick="setRating(4)">★</span>
+        <span class="star" onclick="setRating(5)">★</span>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>질문 / 토론하고 싶은 내용</label>
+      <textarea id="hw-question" placeholder="랩미팅에서 토론하고 싶은 내용..." style="min-height:70px"></textarea>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="btn-submit-hw" onclick="submitHomework()">제출하기</button>
+      <button class="btn btn-ghost" onclick="saveDraft()">임시저장</button>
+    </div>
+  </div>
+
+  <div class="section-title" style="margin-top:1.5rem">제출 현황</div>
+  <div id="submission-list"><div class="loading"><span class="spinner"></span>불러오는 중...</div></div>
+</div>
+
+<!-- TAB 2: 랩미팅 -->
+<div class="page" id="page-1">
+  <div class="section-title">랩미팅 논문 & 발표자료 업로드</div>
+  <div class="card">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>발표자 이름 *</label>
+        <input type="text" id="meet-name" placeholder="이름">
+      </div>
+      <div class="form-group">
+        <label>발표 날짜 *</label>
+        <input type="date" id="meet-date" style="color-scheme:light">
+      </div>
+      <div class="form-group full">
+        <label>논문 제목 *</label>
+        <input type="text" id="meet-title" placeholder="논문 제목 전체">
+      </div>
+      <div class="form-group">
+        <label>저자</label>
+        <input type="text" id="meet-authors" placeholder="First author et al.">
+      </div>
+      <div class="form-group">
+        <label>저널 / 연도</label>
+        <input type="text" id="meet-journal" placeholder="예: ACS Nano 2024">
+      </div>
+      <div class="form-group full">
+        <label>DOI / URL</label>
+        <input type="text" id="meet-doi" placeholder="https://doi.org/10.xxxx/...">
+      </div>
+      <div class="form-group">
+        <label>분류 컬렉션</label>
+        <select id="meet-collection">
+          <option value="">선택...</option>
+          <option>01_Sandwich_Mechanism</option>
+          <option>02_Hot_Injection_Kinetics</option>
+          <option>03_Core_Candidates</option>
+          <option>04_vdW_Epitaxy</option>
+          <option>Others</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Impact Factor</label>
+        <input type="number" id="meet-if" placeholder="예: 16.6" step="0.1">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Key Findings</label>
+      <textarea id="meet-findings" placeholder="발표할 핵심 내용..."></textarea>
+    </div>
+    <div class="form-group">
+      <label>Experimental Conditions</label>
+      <textarea id="meet-exp" placeholder="합성 조건, 측정 조건 등..."></textarea>
+    </div>
+    <hr class="divider">
+    <div class="form-group">
+      <label>PDF 논문 업로드</label>
+      <div class="upload-zone" id="pdf-zone" onclick="document.getElementById('pdf-input').click()">
+        <div class="upload-icon">📄</div>
+        <div class="upload-text">클릭하여 논문 PDF 첨부</div>
+        <div class="upload-hint">PDF 파일, 최대 50MB</div>
+      </div>
+      <input type="file" id="pdf-input" accept=".pdf" onchange="handleFile('pdf-zone','pdf-input','pdf-name')">
+      <div id="pdf-name" style="font-size:12px;color:var(--green);margin-top:6px;display:none"></div>
+    </div>
+    <div class="form-group">
+      <label>발표 PPT 업로드</label>
+      <div class="upload-zone" id="ppt-zone" onclick="document.getElementById('ppt-input').click()">
+        <div class="upload-icon">📊</div>
+        <div class="upload-text">클릭하여 발표자료 첨부</div>
+        <div class="upload-hint">PPT, PPTX, PDF 형식</div>
+      </div>
+      <input type="file" id="ppt-input" accept=".ppt,.pptx,.pdf" onchange="handleFile('ppt-zone','ppt-input','ppt-name')">
+      <div id="ppt-name" style="font-size:12px;color:var(--green);margin-top:6px;display:none"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="btn-submit-meet" onclick="submitMeeting()">업로드 완료</button>
+      <button class="btn btn-ghost" onclick="clearForm('meet')">초기화</button>
+    </div>
+  </div>
+  <div class="section-title" style="margin-top:1.5rem">등록된 랩미팅 논문</div>
+  <div id="meeting-list"><div class="loading"><span class="spinner"></span>불러오는 중...</div></div>
+</div>
+
+<!-- TAB 3: 추가 논문 -->
+<div class="page" id="page-2">
+  <div class="section-title">추가 논문 업로드</div>
+  <div class="card">
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>논문 제목 *</label>
+        <input type="text" id="add-title" placeholder="논문 제목 전체">
+      </div>
+      <div class="form-group">
+        <label>저자</label>
+        <input type="text" id="add-authors" placeholder="First author et al.">
+      </div>
+      <div class="form-group">
+        <label>저널</label>
+        <input type="text" id="add-journal" placeholder="예: Nano Letters">
+      </div>
+      <div class="form-group">
+        <label>출판연도</label>
+        <input type="number" id="add-year" placeholder="2024" min="1990" max="2030">
+      </div>
+      <div class="form-group">
+        <label>Impact Factor</label>
+        <input type="number" id="add-if" placeholder="예: 10.8" step="0.1">
+      </div>
+      <div class="form-group full">
+        <label>DOI / URL</label>
+        <input type="text" id="add-doi" placeholder="https://doi.org/10.xxxx/...">
+      </div>
+      <div class="form-group">
+        <label>분류 컬렉션 *</label>
+        <select id="add-collection">
+          <option value="">선택...</option>
+          <option>01_Sandwich_Mechanism</option>
+          <option>02_Hot_Injection_Kinetics</option>
+          <option>03_Core_Candidates</option>
+          <option>04_vdW_Epitaxy</option>
+          <option>Others</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>인용수</label>
+        <input type="number" id="add-cite" placeholder="예: 120" min="0">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Key Findings</label>
+      <textarea id="add-findings" placeholder="논문의 핵심 발견..."></textarea>
+    </div>
+    <div class="form-group">
+      <label>Experimental Conditions</label>
+      <textarea id="add-exp" placeholder="실험 조건 정리..."></textarea>
+    </div>
+    <div class="form-group">
+      <label>우리 연구와의 연관성</label>
+      <textarea id="add-relevance" placeholder="WMoSe₂/CsPbBr₃ 연구와의 연관성..." style="min-height:70px"></textarea>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:1rem">
+      <input type="checkbox" id="add-recommend" style="width:auto;accent-color:var(--accent)">
+      <label for="add-recommend" style="margin:0;font-size:13px;color:var(--text2);cursor:pointer">주간 추천 논문 후보로 등록</label>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="btn-submit-add" onclick="submitAdditional()">논문 등록</button>
+      <button class="btn btn-ghost" onclick="clearForm('add')">초기화</button>
+    </div>
+  </div>
+  <div class="section-title" style="margin-top:1.5rem">등록된 추가 논문</div>
+  <div id="additional-list"><div class="loading"><span class="spinner"></span>불러오는 중...</div></div>
+</div>
+
+<div class="notif" id="notif"></div>
+
+<script>
+// =============================================
+// ★ 여기에 Apps Script 배포 URL 입력 ★
+// =============================================
+const API_URL = "https://script.google.com/macros/s/AKfycbxFH5B_hjEGNPD5JvfLiEbgNP-U8cPg-6_Oqn4v79nm45ABK_1b-RE0a3ia1LuLo4di/exec";// 예: "https://script.google.com/macros/s/AKfycb.../exec"
+// =============================================
+
+let rating = 0;
+const DRAFT_KEY = 'nanoEnergy_draft';
+
+// ── 탭 전환 ──
+function switchTab(n) {
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===n));
+  document.querySelectorAll('.page').forEach((p,i)=>p.classList.toggle('active',i===n));
+  if(n===0) loadSubmissions();
+  if(n===1) loadMeetings();
+  if(n===2) loadAdditional();
+}
+
+// ── API 상태 확인 ──
+async function checkAPI() {
+  const dot  = document.getElementById('status-dot');
+  const text = document.getElementById('status-text');
+  const warn = document.getElementById('api-warning');
+
+  if (!API_URL || API_URL.includes('여기에')) {
+    dot.className='status-dot err';
+    text.textContent='API 미설정';
+    text.style.color='var(--red)';
+    warn.style.display='block';
+    return false;
+  }
+  try {
+    const r = await fetch(API_URL+'?type=submissions');
+    if(r.ok){
+      dot.className='status-dot ok';
+      text.textContent='연결됨';
+      text.style.color='var(--green)';
+      warn.style.display='none';
+      return true;
+    }
+  } catch(e) {}
+  dot.className='status-dot err';
+  text.textContent='연결 실패';
+  text.style.color='var(--red)';
+  return false;
+}
+
+// ── API 호출 헬퍼 ──
+async function apiGet(type) {
+  const r = await fetch(`${API_URL}?type=${type}`);
+  return r.json();
+}
+
+async function apiPost(body) {
+  const r = await fetch(API_URL, {
+    method: 'POST',
+    body: JSON.stringify(body)
+  });
+  return r.json();
+}
+
+// ── UI 헬퍼 ──
+function setRating(n) {
+  rating = n;
+  document.querySelectorAll('.star').forEach((s,i)=>s.classList.toggle('on',i<n));
+}
+
+function showNotif(msg, color='var(--green)') {
+  const el = document.getElementById('notif');
+  el.textContent = msg;
+  el.style.display = 'block';
+  el.style.borderColor = color;
+  el.style.color = color;
+  setTimeout(()=>el.style.display='none', 3000);
+}
+
+function setLoading(btnId, loading) {
+  const btn = document.getElementById(btnId);
+  if(!btn) return;
+  btn.disabled = loading;
+  btn.innerHTML = loading
+    ? '<span class="spinner"></span>저장 중...'
+    : btn.dataset.label || '저장';
+}
+
+function handleFile(zoneId, inputId, nameId) {
+  const f = document.getElementById(inputId).files[0];
+  if(!f) return;
+  const zone = document.getElementById(zoneId);
+  zone.classList.add('has-file');
+  zone.querySelector('.upload-text').textContent = '✓ 파일 첨부됨';
+  zone.querySelector('.upload-hint').textContent = f.name;
+  const nameEl = document.getElementById(nameId);
+  nameEl.textContent = f.name+' ('+Math.round(f.size/1024)+'KB)';
+  nameEl.style.display = 'block';
+}
+
+// ── 현재 주차 계산 ──
+function getWeek() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(),0,1);
+  return Math.ceil(((now-start)/86400000+start.getDay()+1)/7);
+}
+
+// ── 탭 1: 숙제 제출 ──
+async function submitHomework() {
+  const name     = document.getElementById('hw-name').value.trim();
+  const findings = document.getElementById('hw-findings').value.trim();
+  const exp      = document.getElementById('hw-exp').value.trim();
+  if(!name)     { showNotif('이름을 입력해주세요.','var(--red)'); return; }
+  if(!findings) { showNotif('Key Findings를 작성해주세요.','var(--red)'); return; }
+  if(!exp)      { showNotif('Experimental Conditions를 작성해주세요.','var(--red)'); return; }
+
+  document.getElementById('btn-submit-hw').dataset.label = '제출하기';
+  setLoading('btn-submit-hw', true);
+
+  try {
+    const res = await apiPost({
+      type:       'submission',
+      name,
+      week:       getWeek(),
+      paperTitle: 'Facet-selective growth of halide perovskite/2D semiconductor...',
+      findings,
+      exp,
+      relevance:  document.getElementById('hw-relevance').value,
+      question:   document.getElementById('hw-question').value,
+      rating
+    });
+
+    if(res.success) {
+      localStorage.removeItem(DRAFT_KEY);
+      showNotif('✓ 제출 완료! 수고하셨습니다.');
+      ['hw-name','hw-findings','hw-exp','hw-relevance','hw-question'].forEach(id=>document.getElementById(id).value='');
+      setRating(0);
+      loadSubmissions();
+    } else {
+      showNotif('오류: '+res.error,'var(--red)');
+    }
+  } catch(e) {
+    showNotif('네트워크 오류: '+e.message,'var(--red)');
+  } finally {
+    setLoading('btn-submit-hw', false);
+    document.getElementById('btn-submit-hw').textContent = '제출하기';
+  }
+}
+
+function saveDraft() {
+  localStorage.setItem(DRAFT_KEY, JSON.stringify({
+    name:      document.getElementById('hw-name').value,
+    findings:  document.getElementById('hw-findings').value,
+    exp:       document.getElementById('hw-exp').value,
+    relevance: document.getElementById('hw-relevance').value,
+    question:  document.getElementById('hw-question').value,
+    rating
+  }));
+  showNotif('💾 임시저장 완료');
+}
+
+function loadDraft() {
+  const d = JSON.parse(localStorage.getItem(DRAFT_KEY)||'null');
+  if(!d) return;
+  ['name','findings','exp','relevance','question'].forEach(k=>{
+    const el=document.getElementById('hw-'+k);
+    if(el&&d[k]) el.value=d[k];
+  });
+  if(d.rating) setRating(d.rating);
+}
+
+async function loadSubmissions() {
+  const el = document.getElementById('submission-list');
+  el.innerHTML = '<div class="loading"><span class="spinner"></span>불러오는 중...</div>';
+  try {
+    const res = await apiGet('submissions');
+    const data = res.data || [];
+
+    // 이번 주 제출 수
+    const week = getWeek();
+    const thisWeek = data.filter(d=>parseInt(d['주차'])===week);
+    document.getElementById('stat-done').textContent  = thisWeek.length;
+    document.getElementById('stat-total').textContent = data.length;
+
+    if(!data.length) {
+      el.innerHTML='<div style="font-size:13px;color:var(--text3);padding:1rem 0">아직 제출된 과제가 없습니다.</div>';
+      return;
+    }
+    el.innerHTML = data.slice().reverse().map((d,i)=>`
+      <div class="paper-item">
+        <div class="dot dot-done"></div>
+        <div class="paper-info">
+          <div class="title">${d['학생이름']} <span style="font-weight:400;color:var(--text2)">W${d['주차']}</span></div>
+          <div class="meta">${d['제출시간']} &nbsp;·&nbsp; 난이도: ${'★'.repeat(parseInt(d['난이도'])||0)}</div>
+          ${d['KeyFindings']?`<div style="font-size:11px;color:var(--text2);margin-top:4px;line-height:1.5">${d['KeyFindings'].substring(0,80)}...</div>`:''}
+        </div>
+      </div>`).join('');
+  } catch(e) {
+    el.innerHTML='<div style="font-size:13px;color:var(--red);padding:1rem 0">데이터 로드 실패: '+e.message+'</div>';
+  }
+}
+
+// ── 탭 2: 랩미팅 ──
+async function submitMeeting() {
+  const name  = document.getElementById('meet-name').value.trim();
+  const title = document.getElementById('meet-title').value.trim();
+  const date  = document.getElementById('meet-date').value;
+  if(!name||!title||!date){showNotif('발표자, 제목, 날짜는 필수입니다.','var(--red)');return;}
+
+  document.getElementById('btn-submit-meet').dataset.label='업로드 완료';
+  setLoading('btn-submit-meet',true);
+  try {
+    const res = await apiPost({
+      type:       'meeting',
+      name, title, date,
+      authors:    document.getElementById('meet-authors').value,
+      journal:    document.getElementById('meet-journal').value,
+      doi:        document.getElementById('meet-doi').value,
+      collection: document.getElementById('meet-collection').value,
+      IF:         document.getElementById('meet-if').value,
+      findings:   document.getElementById('meet-findings').value,
+      exp:        document.getElementById('meet-exp').value,
+      pdfName:    document.getElementById('pdf-input').files[0]?.name||'',
+      pptName:    document.getElementById('ppt-input').files[0]?.name||''
+    });
+    if(res.success){
+      showNotif('✓ 랩미팅 논문 등록 완료');
+      ['meet-name','meet-title','meet-authors','meet-journal','meet-doi','meet-findings','meet-exp'].forEach(id=>document.getElementById(id).value='');
+      document.getElementById('meet-if').value='';
+      document.getElementById('meet-collection').selectedIndex=0;
+      loadMeetings();
+    } else { showNotif('오류: '+res.error,'var(--red)'); }
+  } catch(e){ showNotif('네트워크 오류','var(--red)'); }
+  finally{
+    setLoading('btn-submit-meet',false);
+    document.getElementById('btn-submit-meet').textContent='업로드 완료';
+  }
+}
+
+async function loadMeetings() {
+  const el = document.getElementById('meeting-list');
+  el.innerHTML='<div class="loading"><span class="spinner"></span>불러오는 중...</div>';
+  try {
+    const res = await apiGet('meeting');
+    const data = res.data||[];
+    if(!data.length){el.innerHTML='<div style="font-size:13px;color:var(--text3);padding:1rem 0">아직 등록된 논문이 없습니다.</div>';return;}
+    el.innerHTML=data.slice().reverse().map((p,i)=>`
+      <div class="paper-item">
+        <div class="paper-idx">${String(data.length-i).padStart(2,'0')}</div>
+        <div class="paper-info">
+          <div class="title">${p['논문제목']}</div>
+          <div class="meta">${p['발표자']} · ${p['발표날짜']} · ${p['저널']||'-'}</div>
+          <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap">
+            ${p['컬렉션']?`<span class="badge badge-blue">${p['컬렉션']}</span>`:''}
+            ${p['IF']?`<span class="badge badge-green">IF ${p['IF']}</span>`:''}
+            ${p['PDF파일명']?`<span class="badge badge-amber">PDF 첨부</span>`:''}
+            ${p['PPT파일명']?`<span class="badge badge-purple">PPT 첨부</span>`:''}
+          </div>
+        </div>
+      </div>`).join('');
+  } catch(e){el.innerHTML='<div style="font-size:13px;color:var(--red);padding:1rem 0">데이터 로드 실패</div>';}
+}
+
+// ── 탭 3: 추가 논문 ──
+async function submitAdditional() {
+  const title      = document.getElementById('add-title').value.trim();
+  const collection = document.getElementById('add-collection').value;
+  if(!title)      {showNotif('논문 제목을 입력해주세요.','var(--red)');return;}
+  if(!collection) {showNotif('분류 컬렉션을 선택해주세요.','var(--red)');return;}
+
+  document.getElementById('btn-submit-add').dataset.label='논문 등록';
+  setLoading('btn-submit-add',true);
+  try {
+    const res = await apiPost({
+      type:'additional', title, collection,
+      authors:   document.getElementById('add-authors').value,
+      journal:   document.getElementById('add-journal').value,
+      year:      document.getElementById('add-year').value,
+      IF:        document.getElementById('add-if').value,
+      doi:       document.getElementById('add-doi').value,
+      cite:      document.getElementById('add-cite').value,
+      findings:  document.getElementById('add-findings').value,
+      exp:       document.getElementById('add-exp').value,
+      relevance: document.getElementById('add-relevance').value,
+      recommend: document.getElementById('add-recommend').checked
+    });
+    if(res.success){
+      showNotif('✓ 논문 등록 완료');
+      ['add-title','add-authors','add-journal','add-year','add-if','add-doi','add-cite','add-findings','add-exp','add-relevance'].forEach(id=>document.getElementById(id).value='');
+      document.getElementById('add-collection').selectedIndex=0;
+      document.getElementById('add-recommend').checked=false;
+      loadAdditional();
+    } else { showNotif('오류: '+res.error,'var(--red)'); }
+  } catch(e){ showNotif('네트워크 오류','var(--red)'); }
+  finally{
+    setLoading('btn-submit-add',false);
+    document.getElementById('btn-submit-add').textContent='논문 등록';
+  }
+}
+
+async function loadAdditional() {
+  const el = document.getElementById('additional-list');
+  el.innerHTML='<div class="loading"><span class="spinner"></span>불러오는 중...</div>';
+  try {
+    const res = await apiGet('additional');
+    const data = res.data||[];
+    if(!data.length){el.innerHTML='<div style="font-size:13px;color:var(--text3);padding:1rem 0">아직 등록된 논문이 없습니다.</div>';return;}
+    el.innerHTML=data.slice().reverse().map((p,i)=>`
+      <div class="paper-item">
+        <div class="paper-idx">${String(data.length-i).padStart(2,'0')}</div>
+        <div class="paper-info">
+          <div class="title">${p['논문제목']}</div>
+          <div class="meta">${p['저자']||''} ${p['연도']?'· '+p['연도']:''} ${p['저널']?'· '+p['저널']:''}</div>
+          <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap">
+            ${p['컬렉션']?`<span class="badge badge-blue">${p['컬렉션']}</span>`:''}
+            ${p['IF']?`<span class="badge badge-green">IF ${p['IF']}</span>`:''}
+            ${p['인용수']?`<span class="badge badge-amber">인용 ${p['인용수']}회</span>`:''}
+            ${p['추천여부']==='true'?`<span class="badge badge-purple">추천 대기중</span>`:''}
+          </div>
+        </div>
+      </div>`).join('');
+  } catch(e){el.innerHTML='<div style="font-size:13px;color:var(--red);padding:1rem 0">데이터 로드 실패</div>';}
+}
+
+function clearForm(prefix) {
+  document.querySelectorAll(`[id^="${prefix}-"]`).forEach(el=>{
+    if(el.tagName==='INPUT'||el.tagName==='TEXTAREA') el.value='';
+    if(el.tagName==='SELECT') el.selectedIndex=0;
+    if(el.type==='checkbox') el.checked=false;
+  });
+  showNotif('초기화되었습니다.');
+}
+
+// ── 초기화 ──
+document.getElementById('meet-date').valueAsDate = new Date();
+const w = getWeek();
+document.getElementById('stat-week').textContent   = w;
+document.getElementById('hw-week-badge').textContent = 'W'+w;
+loadDraft();
+checkAPI().then(ok => { if(ok) { loadSubmissions(); loadMeetings(); loadAdditional(); }});
+</script>
+</body>
+</html>
